@@ -1,0 +1,9 @@
+# Secrets — never commit these
+.env
+config.js
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp

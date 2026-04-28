@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"http://localhost:8080/street_gps_mapper.html\")",
+      "WebFetch(domain:marvelous-praline-505cd5.netlify.app)",
+      "Bash(curl -s 'https://tsxxmtkvyhgcrkviimyc.supabase.co/rest/v1/street_gps?select=municipality,constituency,ward_no,ward_name&limit=5' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY')",
+      "Bash(curl -s 'https://tsxxmtkvyhgcrkviimyc.supabase.co/rest/v1/street_gps?select=count' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY' -H 'Prefer: count=exact' -I)",
+      "Bash(curl -s \"https://tsxxmtkvyhgcrkviimyc.supabase.co/rest/v1/?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY\")",
+      "Bash(curl -s 'https://tsxxmtkvyhgcrkviimyc.supabase.co/rest/v1/street_gps?select=municipality,ward_no,ward_name&limit=1000' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY')",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s 'https://tsxxmtkvyhgcrkviimyc.supabase.co/rest/v1/street_gps?select=municipality,ward_no,ward_name&limit=500&offset=0' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeHhtdGt2eWhnY3JrdmlpbXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjUzNDQsImV4cCI6MjA4ODgwMTM0NH0.rrT-JAoLdW62naFtywmrV4_eddGx8-2aDKm8l96_ZjY')",
+      "Bash(curl -s \"https://marvelous-praline-505cd5.netlify.app\")"
+    ]
+  }
+}

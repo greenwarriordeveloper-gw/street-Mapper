@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Street GPS Mapper — Pondicherry</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ LOGIN SCREEN ═══════════════════════════════════════════ -->
+<div id="login-screen">
+  <!-- Left: dark hero -->
+  <div class="ls-left">
+    <div class="ls-logo-row">
+      <div class="ls-logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#06b6d4" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="#06b6d4"/><line x1="12" y1="2" x2="12" y2="6" stroke="#06b6d4" stroke-width="2"/><line x1="12" y1="18" x2="12" y2="22" stroke="#06b6d4" stroke-width="2"/><line x1="2" y1="12" x2="6" y2="12" stroke="#06b6d4" stroke-width="2"/><line x1="18" y1="12" x2="22" y2="12" stroke="#06b6d4" stroke-width="2"/></svg>
+      </div>
+      <div>
+        <div class="ls-brand">STREET GPS MAPPER</div>
+        <div class="ls-brand-sub">PONDICHERRY MUNICIPALITY SURVEY</div>
+      </div>
+    </div>
+    <!-- Animated dots canvas -->
+    <div class="ls-dots-bg" id="ls-dots-bg">
+      <div class="ls-dot ls-dot-green" style="top:30%;left:45%"></div>
+      <div class="ls-dot ls-dot-yellow" style="top:42%;left:62%"></div>
+      <div class="ls-dot ls-dot-green" style="top:51%;left:38%"></div>
+      <div class="ls-dot ls-dot-red" style="top:60%;left:55%"></div>
+      <div class="ls-dot ls-dot-yellow" style="top:22%;left:68%"></div>
+      <div class="ls-dot ls-dot-green" style="top:35%;left:28%"></div>
+      <div class="ls-grid"></div>
+    </div>
+    <div class="ls-hero">
+      <h1 class="ls-h1">Map Every Street.<br><span class="ls-teal">Capture Every Point.</span></h1>
+      <p class="ls-desc">A professional field data collection platform for GPS coordinate mapping of all streets across Pondicherry and Oulgaret municipalities.</p>
+    </div>
+    <div class="ls-features">
+      <div class="ls-feat"><div class="ls-feat-ico">📍</div><div><div class="ls-feat-title">4,052 Streets</div><div class="ls-feat-sub">Pondicherry &amp; Oulgaret</div></div></div>
+      <div class="ls-feat"><div class="ls-feat-ico">⬡</div><div><div class="ls-feat-title">Ward Filters</div><div class="ls-feat-sub">12 wards pre-loaded</div></div></div>
+      <div class="ls-feat"><div class="ls-feat-ico">🔐</div><div><div class="ls-feat-title">Role-Based Access</div><div class="ls-feat-sub">Admin &amp; Field teams</div></div></div>
+      <div class="ls-feat"><div class="ls-feat-ico">👥</div><div><div class="ls-feat-title">Team Groups</div><div class="ls-feat-sub">Collaborative mapping</div></div></div>
+    </div>
+  </div>
+
+  <!-- Right: white form -->
+  <div class="ls-right">
+    <div class="ls-form-card">
+      <h2 class="ls-welcome">Welcome back</h2>
+      <p class="ls-welcome-sub">Sign in to your field survey account</p>
+      <div class="ls-tabs-row">
+        <button class="ls-tab active" id="ls-tab-signin" onclick="lsTab('signin',this)">Sign In</button>
+        <button class="ls-tab" id="ls-tab-create" onclick="lsTab('create',this)">Create Admin</button>
+      </div>
+      <div id="ls-signin-pane">
+        <label class="ls-lbl">USERNAME</label>
+        <input type="text" id="login-user" class="ls-inp" placeholder="e.g. admin" autocomplete="username">
+        <label class="ls-lbl">PASSWORD</label>
+        <div class="ls-pass-wrap">
+          <input type="password" id="login-pass" class="ls-inp" placeholder="Enter password" autocomplete="current-password">
+        </div>
+        <button class="ls-submit" id="login-btn" onclick="doLogin()">Sign In →</button>
+        <div id="login-err" class="ls-err"></div>
+        <div class="ls-demo">Demo: username <b>admin</b> / any password 4+ chars</div>
+      </div>
+      <div id="ls-create-pane" style="display:none">
+        <div id="setup-link"><a onclick="firstAdminSetup()">Create first admin account</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SAVE CONFIRM ════════════════════════════════════════════ -->
+<div id="save-overlay" class="overlay hidden">
+  <div class="mbox">
+    <div class="mtitle">Confirm Save</div>
+    <div class="msub">Review all three coordinates before saving to Supabase</div>
+    <div class="cf-name" id="cf-name">—</div>
+    <div class="cf-ward" id="cf-ward">—</div>
+    <div class="cf-coords" id="cf-coords"></div>
+    <div class="cf-btns">
+      <button class="btn-no" onclick="cancelSave()">✕  Cancel</button>
+      <button class="btn-ok" onclick="confirmSave()">✓  Confirm &amp; Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OVERWRITE CONFIRM ═══════════════════════════════════════ -->
+<div id="overwrite-overlay" class="overlay hidden">
+  <div class="mbox" style="max-width:360px;text-align:center">
+    <div class="mtitle" style="color:var(--orange)">⚠ Street Already Mapped</div>
+    <div class="msub" style="margin:10px 0 20px">This street has all 3 points saved.<br>Do you want to re-map it from scratch?</div>
+    <div class="cf-btns">
+      <button class="btn-no" onclick="discardRemap()">✕  Keep Existing</button>
+      <button class="btn-ok" style="background:var(--orange)" onclick="confirmRemap()">↺  Re-map Street</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GEOFENCE EDIT MODAL ══════════════════════════════════════ -->
+<div id="gf-edit-overlay">
+  <div class="gf-edit-box">
+    <div class="gf-edit-title">Edit Geofence</div>
+    <div class="gf-edit-sub">Update the name or color of this zone</div>
+    <input type="hidden" id="gf-edit-id">
+    <div class="gf-edit-row">
+      <input class="gf-edit-inp" id="gf-edit-name" placeholder="Geofence name">
+      <input type="color" class="poly-color-inp" id="gf-edit-color" value="#ff6b35" title="Pick color">
+    </div>
+    <div class="gf-edit-btns">
+      <button class="gf-edit-cancel" onclick="closeGfEdit()">Cancel</button>
+      <button class="gf-edit-save" onclick="saveGfEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ POLYGON FULL PAGE ════════════════════════════════════════ -->
+<div id="poly-page">
+  <div class="poly-topbar">
+    <button class="poly-back-btn" onclick="closePoly()">← Back</button>
+    <div class="poly-page-title"><span>◇</span> Geofence &amp; Polygon Manager</div>
+    <div class="poly-page-sub">Draw zones, upload KML files and manage geofence areas</div>
+  </div>
+  <div class="poly-body">
+    <div class="poly-sidebar">
+      <div class="poly-tools-section">
+        <div class="poly-tools-label">Draw Tools</div>
+        <div class="poly-tools">
+          <button class="ptool-btn active" id="draw-poly-btn" onclick="startDrawPolygon()">✏ Draw Polygon</button>
+          <label class="kml-upload-label" title="Upload KML file">
+            ⬆ Upload KML
+            <input type="file" id="kml-file" accept=".kml" style="display:none" onchange="handleKML(this)">
+          </label>
+        </div>
+      </div>
+      <div class="poly-save-form" id="poly-save-form">
+        <div class="poly-save-label">New Geofence</div>
+        <div class="poly-save-row">
+          <input class="poly-inp" id="poly-name" placeholder="e.g. Ward 5 Zone A">
+          <input type="color" class="poly-color-inp" id="poly-color" value="#ff6b35" title="Pick color">
+        </div>
+        <div class="poly-save-actions">
+          <button class="poly-save-btn" onclick="saveGeofence()">💾 Save Geofence</button>
+          <button class="poly-clear-btn" onclick="clearDrawing()">✕ Clear</button>
+        </div>
+      </div>
+      <div class="gf-list-section">
+        <div class="gf-list-head">
+          <span class="gf-list-title">Saved Zones</span>
+          <span class="gf-count-badge" id="gf-count-badge">0 zones</span>
+        </div>
+        <div class="gf-col-hdr"><span>NO</span><span>NAME</span><span>DATE</span><span class="gf-ch-act">ACTIONS</span></div>
+        <div class="gf-cards" id="gf-cards">
+          <div class="gf-empty-state"><div class="gf-empty-icon">◇</div>No geofences yet.<br>Draw a polygon or upload KML.</div>
+        </div>
+      </div>
+    </div>
+    <div class="poly-map-wrap">
+      <div id="poly-map"></div>
+      <div class="poly-status" id="poly-status">Click "Draw Polygon" then click on the map to add vertices. Double-click to finish.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP SHELL ═══════════════════════════════════════════ -->
+<div id="app-shell" style="display:none">
+
+  <!-- LEFT NAVIGATION -->
+  <nav id="left-nav">
+    <div class="ln-logo">
+      <div class="ln-logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#3b82f6" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="#3b82f6"/><line x1="12" y1="2" x2="12" y2="6" stroke="#3b82f6" stroke-width="2"/><line x1="12" y1="18" x2="12" y2="22" stroke="#3b82f6" stroke-width="2"/><line x1="2" y1="12" x2="6" y2="12" stroke="#3b82f6" stroke-width="2"/><line x1="18" y1="12" x2="22" y2="12" stroke="#3b82f6" stroke-width="2"/></svg>
+      </div>
+      <div>
+        <div class="ln-brand">GPS MAPPER</div>
+        <div class="ln-sub">PONDICHERRY</div>
+      </div>
+    </div>
+
+    <div class="ln-section">
+      <div class="ln-sec-title">MAP TOOLS</div>
+      <button class="ln-item" id="nav-map" onclick="navTo('map')">
+        <svg class="ln-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6-10l6-3m0 13l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 10m0 10V10"/></svg>
+        GPS Mapper <span class="ln-arrow">↗</span>
+      </button>
+      <button class="ln-item" id="nav-measure" onclick="navTo('measure')">
+        <svg class="ln-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 20l10-16M5 15l4-4M15 9l4-4"/><path d="M3 21l2-2M19 3l2-2"/></svg>
+        Measure Tool <span class="ln-arrow">↗</span>
+      </button>
+      <button class="ln-item" id="nav-polygons" onclick="navTo('polygons')">
+        <svg class="ln-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 9 16 20 8 20 5 9"/></svg>
+        Polygons <span class="ln-arrow">↗</span>
+      </button>
+    </div>
+
+    <div class="ln-section">
+      <div class="ln-sec-title">PAGES</div>
+      <button class="ln-item active" id="nav-dashboard" onclick="navTo('dashboard')">
+        <svg class="ln-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </button>
+      <button class="ln-item" id="nav-reports" onclick="navTo('reports')">
+        <svg class="ln-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Reports
+      </button>
+      <button class="ln-item" id="nav-admin" style="display:none" onclick="navTo('admin')">
+        <svg class="ln-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Admin Panel
+      </button>
+    </div>
+
+    <div class="ln-user">
+      <div class="ln-avatar" id="ln-avatar">?</div>
+      <div class="ln-user-info">
+        <div class="ln-uname" id="ln-uname">—</div>
+        <div class="ln-urole" id="ln-urole">USER</div>
+      </div>
+      <button class="ln-logout" onclick="doLogout()" title="Logout">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT AREA -->
+  <div id="main-content">
+
+    <!-- STATUS BAR -->
+    <div id="status-bar">
+      <div class="sb-left">
+        <div class="sb-live-dot" id="sb-live-dot"></div>
+        <span class="sb-live-txt">LIVE SYNC</span>
+        <span class="sb-sync-time" id="sb-sync-time">Connecting…</span>
+      </div>
+      <div class="sb-stats">
+        <div class="sb-stat-item">
+          <span class="sb-num green" id="sb-done">—</span>
+          <span class="sb-lbl">Done</span>
+        </div>
+        <div class="sb-divider"></div>
+        <div class="sb-stat-item">
+          <span class="sb-num yellow" id="sb-partial">—</span>
+          <span class="sb-lbl">Partial</span>
+        </div>
+        <div class="sb-divider"></div>
+        <div class="sb-stat-item">
+          <span class="sb-num gray" id="sb-pending">—</span>
+          <span class="sb-lbl">Pending</span>
+        </div>
+        <div class="sb-pbar-wrap">
+          <div class="sb-pbar" id="sb-pbar" style="width:0%"></div>
+        </div>
+        <span class="sb-pct" id="sb-pct">0%</span>
+      </div>
+      <div class="sb-right">
+        <button class="sb-icon-btn" id="btn-undo" title="Undo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>
+        </button>
+        <button class="sb-icon-btn" id="btn-export" title="Export Excel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <div class="sb-db-badge" id="db-status">CONNECTING</div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: DASHBOARD ─────────────────────────────── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Survey Dashboard</h1>
+          <p class="page-sub">Real-time progress overview — Pondicherry &amp; Oulgaret Municipality</p>
+        </div>
+        <div class="page-hdr-right">
+          <span class="ph-date" id="ph-date"></span>
+          <button class="btn-primary" onclick="navTo('reports')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Report
+          </button>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="sc-top"><div class="sc-icon sc-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><svg class="sc-trend green" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+          <div class="sc-val" id="sc-total">4,052</div>
+          <div class="sc-label">Total Streets</div>
+          <div class="sc-sub">Pondicherry + Oulgaret</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-top"><div class="sc-icon sc-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div><svg class="sc-trend green" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+          <div class="sc-val sc-green-val" id="sc-done">—</div>
+          <div class="sc-label">Completed</div>
+          <div class="sc-sub" id="sc-done-pct">—% complete</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-top"><div class="sc-icon sc-yellow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><svg class="sc-trend green" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+          <div class="sc-val sc-yellow-val" id="sc-partial">—</div>
+          <div class="sc-label">In Progress</div>
+          <div class="sc-sub">Partially mapped</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-top"><div class="sc-icon sc-gray"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><svg class="sc-trend green" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+          <div class="sc-val sc-gray-val" id="sc-pending">—</div>
+          <div class="sc-label">Pending</div>
+          <div class="sc-sub">Not started yet</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="dash-charts">
+        <div class="dash-card">
+          <div class="dc-head">
+            <div><div class="dc-title">Ward-wise Progress</div><div class="dc-sub">Streets completed per ward</div></div>
+            <button class="dc-link-btn" onclick="navTo('map')">Open Map →</button>
+          </div>
+          <div class="ward-chart" id="ward-chart"></div>
+        </div>
+        <div class="dash-card muni-card">
+          <div class="dc-title" style="margin-bottom:4px">By Municipality</div>
+          <div class="dc-sub" style="margin-bottom:16px">Street distribution</div>
+          <div class="donut-wrap">
+            <div class="donut" id="muni-donut"></div>
+            <div class="donut-center-txt"><div id="donut-pct" class="donut-big">—%</div><div class="donut-lbl">done</div></div>
+          </div>
+          <div class="donut-legend">
+            <div class="dl-row"><span class="dl-dot" style="background:#3b82f6"></span>Pondicherry</div>
+            <div class="dl-row"><span class="dl-dot" style="background:#8b5cf6"></span>Oulgaret</div>
+          </div>
+          <div class="ds-stats" id="ds-stats">
+            <div class="ds-row"><span class="ds-dot" style="background:#22c55e"></span><span>Completed</span><span class="ds-pct green" id="ds-comp">—%</span></div>
+            <div class="ds-row"><span class="ds-dot" style="background:#f59e0b"></span><span>Partial</span><span class="ds-pct yellow" id="ds-part">—%</span></div>
+            <div class="ds-row"><span class="ds-dot" style="background:#94a3b8"></span><span>Pending</span><span class="ds-pct gray" id="ds-pend">—%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom row: Activity + Quick Access + Progress -->
+      <div class="dash-bottom">
+        <div class="dash-card activity-card">
+          <div class="dc-head">
+            <div><div class="dc-title">Today's Activity</div><div class="dc-sub" id="dash-today-sub">—</div></div>
+            <span class="live-badge">● LIVE</span>
+          </div>
+          <div class="activity-list" id="activity-list">
+            <div class="act-empty">No activity yet today</div>
+          </div>
+        </div>
+        <div class="dash-right-col">
+          <div class="dash-card qa-card">
+            <div class="dc-title" style="margin-bottom:4px">Quick Access</div>
+            <div class="dc-sub" style="margin-bottom:14px">Jump to any module</div>
+            <div class="qa-grid">
+              <button class="qa-item" onclick="navTo('map')"><div class="qa-ico">🗺</div><div><b>GPS Mapper</b><small>Map street coordinates</small></div></button>
+              <button class="qa-item" onclick="navTo('measure')"><div class="qa-ico">📏</div><div><b>Measure Tool</b><small>Calculate distances</small></div></button>
+              <button class="qa-item" onclick="navTo('polygons')"><div class="qa-ico">⬡</div><div><b>Polygon Mgr</b><small>Manage geofences</small></div></button>
+              <button class="qa-item" onclick="navTo('reports')"><div class="qa-ico">📋</div><div><b>Daily Report</b><small>Export field data</small></div></button>
+              <button class="qa-item" id="qa-admin-btn" style="display:none" onclick="navTo('admin')"><div class="qa-ico">⚙</div><div><b>Admin Panel</b><small>Users &amp; groups</small></div></button>
+              <button class="qa-item" onclick="navTo('reports')"><div class="qa-ico">✓</div><div><b>Today Stats</b><small id="qa-today-lbl">— mapped today</small></div></button>
+            </div>
+          </div>
+          <div class="dash-card progress-card">
+            <div class="dc-head" style="margin-bottom:10px">
+              <div class="dc-title">Overall Progress</div>
+              <div class="op-pct-big" id="op-pct">—%</div>
+            </div>
+            <div class="op-bar-wrap"><div class="op-bar" id="op-bar" style="width:0%"></div></div>
+            <div class="op-meta"><span id="op-counts">— / 4,052 streets</span><span class="op-week" id="op-week"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: MAP ───────────────────────────────────── -->
+    <div class="page" id="page-map" style="display:none;flex-direction:column;height:100%">
+      <!-- Map mode tab bar -->
+      <div id="map-mode-bar">
+        <div class="mmb-left">
+          <button class="mmtab active" id="mmtab-gps" onclick="mapMode('gps',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            GPS Mapper
+          </button>
+          <button class="mmtab" id="mmtab-measure" onclick="mapMode('measure',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 20l10-16"/></svg>
+            Measure
+          </button>
+          <button class="mmtab" id="mmtab-polygons" onclick="mapMode('polygons',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 9 16 20 8 20 5 9"/></svg>
+            Polygons
+          </button>
+        </div>
+        <div class="mmb-right">
+          <div id="searchbar">
+            <input type="text" id="coord-input" placeholder="11.9345, 79.8306">
+            <button id="coord-go">Go</button>
+            <span id="coord-fb"></span>
+          </div>
+        </div>
+      </div>
+      <div id="muni-tabs-wrap"><div id="muni-tabs"></div></div>
+      <!-- Map layout -->
+      <div id="map-layout">
+        <!-- Street sidebar -->
+        <div id="sidebar">
+          <!-- Progress ring -->
+          <div id="sidebar-progress">
+            <div class="sp-ring-wrap">
+              <svg class="sp-ring" viewBox="0 0 36 36">
+                <path class="sp-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="sp-ring-fill" id="sp-ring-fill" stroke-dasharray="0,100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <div class="sp-ring-label"><span id="sp-pct-txt">0%</span></div>
+            </div>
+            <div class="sp-info">
+              <div class="sp-counts" id="sp-counts">— / 4,052</div>
+              <div class="sp-csub">streets completed</div>
+              <div class="sp-detail">
+                <span class="spd-item yellow" id="sp-partial-cnt">— partial</span>
+                <span class="spd-item gray" id="sp-pending-cnt">— pending</span>
+              </div>
+            </div>
+          </div>
+          <!-- Search + filters -->
+          <div id="sidebar-search"><input type="text" id="street-search" placeholder="Search streets or wards…"></div>
+          <div id="filter-tabs">
+            <div class="ftab active" data-f="ALL">ALL</div>
+            <div class="ftab" data-f="PENDING">PENDING</div>
+            <div class="ftab" data-f="DONE">DONE</div>
+          </div>
+          <div id="ward-filter-wrap">
+            <div class="ward-trigger" id="ward-trigger" onclick="toggleWardMenu()">
+              <span id="ward-trigger-text">All Wards</span><span class="ward-arrow">▾</span>
+            </div>
+            <div class="ward-menu" id="ward-menu">
+              <input type="text" class="ward-search-inp" id="ward-search-inp" placeholder="Search ward…" oninput="filterWardOpts(this.value)">
+              <div class="ward-opts" id="ward-opts"></div>
+            </div>
+          </div>
+          <div id="sidebar-stats">
+            <span class="stat-i"><span class="stat-dot" style="background:#22c55e"></span>S: <span id="stat-s">0</span></span>
+            <span class="stat-i"><span class="stat-dot" style="background:#f59e0b"></span>M: <span id="stat-m">0</span></span>
+            <span class="stat-i"><span class="stat-dot" style="background:#f97316"></span>E: <span id="stat-e">0</span></span>
+          </div>
+          <div id="street-list"></div>
+        </div>
+
+        <!-- Map container -->
+        <div id="map-container">
+          <div id="map"></div>
+          <div id="map-coords">LAT —  LON —  ZOOM —</div>
+          <button id="measure-btn" onclick="toggleMeasure()">⬌ Measure</button>
+          <button id="sat-toggle" onclick="toggleSatView()">◉ Satellite</button>
+          <button id="gf-btn" onclick="toggleGfPanel()">⬡ Zones</button>
+          <button id="data-layer-btn" onclick="toggleDataLayer()" title="Toggle all mapped data">◉ All Data</button>
+
+          <!-- Measure floating panel -->
+          <div id="measure-panel" class="hidden">
+            <div class="mp-head">
+              <div class="mp-icon">⬌</div>
+              <div class="mp-title">Measure</div>
+              <div class="mp-head-actions">
+                <button class="mp-icon-btn" onclick="undoMeasurePoint()" title="Undo last point">↩</button>
+                <button class="mp-icon-btn" onclick="clearMeasure()" title="Close">✕</button>
+              </div>
+            </div>
+            <div class="mp-hint" id="mp-hint">Click points on the map to measure distances</div>
+            <div class="mp-divider"></div>
+            <div class="mp-stat-row"><span class="mp-stat-lbl">Length</span><span class="mp-stat-val" id="mp-length">—</span></div>
+            <div class="mp-stat-row"><span class="mp-stat-lbl">Segments</span><span class="mp-stat-val" id="mp-segs">0</span></div>
+            <div class="mp-stat-row"><span class="mp-stat-lbl">Last segment</span><span class="mp-stat-val" id="mp-last">—</span></div>
+            <div class="mp-adv">
+              <div class="mp-adv-hdr" onclick="toggleMpAdv(this)"><span>Unit options</span><span class="mp-adv-arr">▾</span></div>
+              <div class="mp-adv-body">
+                <label class="mp-radio"><input type="radio" name="mp-unit" value="auto" checked onchange="mpUnitChange(this)"> Auto (m / km)</label>
+                <label class="mp-radio"><input type="radio" name="mp-unit" value="m" onchange="mpUnitChange(this)"> Metres only</label>
+                <label class="mp-radio"><input type="radio" name="mp-unit" value="km" onchange="mpUnitChange(this)"> Kilometres only</label>
+                <label class="mp-radio"><input type="radio" name="mp-unit" value="ft" onchange="mpUnitChange(this)"> Feet</label>
+              </div>
+            </div>
+            <div class="mp-divider"></div>
+            <button class="mp-done-btn" onclick="finishMeasure()">✓ Done</button>
+          </div>
+
+          <!-- Geofence zone panel -->
+          <div id="gf-panel">
+            <div class="gf-panel-hdr">Geofence Zones</div>
+            <div id="gf-panel-list"></div>
+            <div class="gf-filter-row">
+              <input type="checkbox" id="gf-filter-check" onchange="onGfFilterChange()">
+              <label for="gf-filter-check" style="cursor:pointer;font-size:11px">Filter streets to zone</label>
+            </div>
+          </div>
+
+          <!-- Selected street panel -->
+          <div id="sel-panel">
+            <div id="sel-pname">—</div>
+            <div id="sel-pmeta"></div>
+            <div id="sel-pnext"></div>
+            <div id="sel-pcoords"></div>
+            <div id="sel-pdist"></div>
+            <button id="sel-del-btn" onclick="deleteStreetData()" title="Clear all GPS data for this street">🗑 Delete Data</button>
+          </div>
+
+          <div id="placement-hint">Select a street from the sidebar to begin mapping</div>
+          <div id="measure-cursor-tip"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: REPORTS ──────────────────────────────── -->
+    <div class="page" id="page-reports" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Daily Field Report</h1>
+          <p class="page-sub">GPS data recorded per day — exportable to Excel</p>
+        </div>
+        <div class="page-hdr-right">
+          <button class="btn-primary" onclick="exportReport()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Daily Excel
+          </button>
+          <button class="btn-secondary" onclick="exportExcel()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Full Export
+          </button>
+        </div>
+      </div>
+      <div class="reports-layout">
+        <!-- Date list sidebar -->
+        <div class="rpt-date-sidebar">
+          <div class="rpt-date-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            SELECT DATE
+          </div>
+          <input type="date" id="report-date" class="rpt-date-inp" onchange="loadReportPreview()">
+          <div class="rpt-date-list" id="rpt-date-list">
+            <!-- populated by JS with recent dates that have data -->
+          </div>
+          <div class="rpt-nav">
+            <button class="rpt-nav-btn" onclick="rptDateShift(-1)">‹</button>
+            <span>Navigate dates</span>
+            <button class="rpt-nav-btn" onclick="rptDateShift(1)">›</button>
+          </div>
+        </div>
+        <!-- Report content -->
+        <div class="rpt-content">
+          <div class="rpt-content-hdr" id="rpt-content-hdr">
+            <div>
+              <div class="rpt-date-big" id="rpt-date-big">—</div>
+              <div class="rpt-streets-sub" id="rpt-streets-sub">Pick a date to view data</div>
+            </div>
+            <div class="rpt-summary-nums" id="rpt-summary-nums"></div>
+          </div>
+          <!-- Filter row -->
+          <div class="rpt-filter-row">
+            <div class="rpt-search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" class="rpt-search-inp" id="rpt-search" placeholder="Search streets..." oninput="filterRptTable(this.value)">
+            </div>
+            <div class="rpt-ftabs">
+              <button class="rft active" data-f="all" onclick="setRptFilter('all',this)">All</button>
+              <button class="rft" data-f="full" onclick="setRptFilter('full',this)">Complete</button>
+              <button class="rft" data-f="part" onclick="setRptFilter('part',this)">Partial</button>
+            </div>
+          </div>
+          <!-- Table -->
+          <div class="rpt-table-wrap">
+            <table class="rpt-table" id="rpt-table">
+              <thead>
+                <tr>
+                  <th>WARD</th>
+                  <th>STREET NAME</th>
+                  <th>MUNICIPALITY</th>
+                  <th>STATUS</th>
+                  <th>S-M-E</th>
+                  <th>TOTAL LENGTH</th>
+                  <th>TIME</th>
+                </tr>
+              </thead>
+              <tbody id="report-tbody">
+                <tr><td colspan="7" class="rpt-empty">Pick a date above to preview</td></tr>
+              </tbody>
+            </table>
+            <div class="rpt-footer" id="rpt-footer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: ADMIN ─────────────────────────────────── -->
+    <div class="page" id="page-admin" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Admin Panel</h1>
+          <p class="page-sub">Manage users, groups, and ward access permissions</p>
+        </div>
+        <div class="page-hdr-right">
+          <div class="admin-access-badge">⊙ ADMIN ACCESS</div>
+        </div>
+      </div>
+      <div id="amsg" class="amsg" style="display:none"></div>
+      <!-- Admin tabs -->
+      <div class="admin-tabs">
+        <button class="adm-tab active" id="adm-tab-users" onclick="aTab('users',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Users <span class="adm-tab-count" id="adm-user-count">0</span>
+        </button>
+        <button class="adm-tab" id="adm-tab-groups" onclick="aTab('groups',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          Groups <span class="adm-tab-count" id="adm-group-count">0</span>
+        </button>
+        <button class="adm-tab" id="adm-tab-wards" onclick="aTab('wards',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Ward Access
+        </button>
+      </div>
+
+      <!-- Users tab -->
+      <div id="asec-users" class="asec active">
+        <div class="adm-toolbar">
+          <div class="adm-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="adm-search" placeholder="Search users...">
+          </div>
+          <button class="btn-primary" onclick="showAddUserForm()">+ Add User</button>
+        </div>
+        <!-- Add user form (hidden by default) -->
+        <div class="adm-form-card" id="add-user-form" style="display:none">
+          <div class="afc-title">New User</div>
+          <div class="aform">
+            <input class="ainp" id="nu-u" placeholder="Username">
+            <input class="ainp" id="nu-fn" placeholder="Full Name">
+            <input class="ainp" type="password" id="nu-p" placeholder="Password">
+            <select class="asel" id="nu-r"><option value="user">User</option><option value="admin">Admin</option></select>
+            <select class="asel" id="nu-g"><option value="">No Group</option></select>
+            <button class="abtn green" onclick="createUser()">+ Add User</button>
+            <button class="abtn" onclick="document.getElementById('add-user-form').style.display='none'">Cancel</button>
+          </div>
+        </div>
+        <!-- Users table -->
+        <div class="adm-table-wrap">
+          <table class="adm-table">
+            <thead><tr><th>USER</th><th>USERNAME</th><th>ROLE</th><th>GROUP</th><th>ACTIONS</th></tr></thead>
+            <tbody id="utbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Groups tab -->
+      <div id="asec-groups" class="asec">
+        <div class="adm-toolbar">
+          <div style="flex:1"></div>
+          <button class="btn-primary" onclick="showAddGroupForm()">+ Add Group</button>
+        </div>
+        <div class="adm-form-card" id="add-group-form" style="display:none">
+          <div class="afc-title">New Group</div>
+          <div class="aform">
+            <input class="ainp" id="ng-n" placeholder="Group name (e.g. Field Team A)">
+            <button class="abtn green" onclick="createGroup()">+ Add Group</button>
+            <button class="abtn" onclick="document.getElementById('add-group-form').style.display='none'">Cancel</button>
+          </div>
+        </div>
+        <div class="adm-table-wrap">
+          <table class="adm-table">
+            <thead><tr><th>GROUP NAME</th><th>MEMBERS</th><th>ACTIONS</th></tr></thead>
+            <tbody id="gtbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Ward access tab -->
+      <div id="asec-wards" class="asec">
+        <div class="adm-toolbar">
+          <select class="asel" id="wa-g" onchange="loadWardAssign()" style="width:240px">
+            <option value="">— choose group —</option>
+          </select>
+          <button class="btn-primary" id="wa-save-btn" onclick="saveWardAssign()" style="display:none">Save Assignments</button>
+        </div>
+        <div class="ward-grid" id="ward-grid">
+          <div style="color:var(--dim);font-size:12px;padding:12px;grid-column:1/-1">Select a group above</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.min.js"></script>
+<script src="config.js"></script>
+<script src="streets.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
