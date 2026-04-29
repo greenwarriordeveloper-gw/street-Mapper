@@ -1,11 +1,10 @@
 
 'use strict';
-/* ── Config (loaded from config.js via window.APP_CONFIG) ── */
-const _cfg = window.APP_CONFIG || {};
-const SUPABASE_URL     = _cfg.SUPABASE_URL     || '';
-const SUPABASE_ANON_KEY= _cfg.SUPABASE_ANON_KEY|| '';
-const LS_KEY           = _cfg.LS_KEY           || 'pondy_gps_v5';
-const SESSION_KEY      = _cfg.SESSION_KEY      || 'pondy_session_v1';
+/* ── Config (loaded from config.js) ── */
+const SUPABASE_URL      = window.SUPABASE_URL      || '';
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
+const LS_KEY            = 'pondy_gps_v5';
+const SESSION_KEY       = 'pondy_session_v1';
 if(!SUPABASE_URL || !SUPABASE_ANON_KEY){
   console.error('Missing config: copy config.example.js → config.js and fill in your keys.');
   document.addEventListener('DOMContentLoaded',()=>{
