@@ -8,6 +8,25 @@ const LS_KEY           = _cfg.LS_KEY           || 'pondy_gps_v5';
 const SESSION_KEY      = _cfg.SESSION_KEY      || 'pondy_session_v1';
 if(!SUPABASE_URL || !SUPABASE_ANON_KEY){
   console.error('Missing config: copy config.example.js → config.js and fill in your keys.');
+  document.addEventListener('DOMContentLoaded',()=>{
+    const screen=document.getElementById('login-screen');
+    if(!screen)return;
+    const box=document.createElement('div');
+    box.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.92);display:flex;align-items:center;justify-content:center;';
+    box.innerHTML=`<div style="background:#fff;border-radius:16px;padding:32px 36px;max-width:420px;text-align:center;font-family:Inter,sans-serif">
+      <div style="font-size:32px;margin-bottom:12px">⚙️</div>
+      <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px">Configuration Missing</h2>
+      <p style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:20px">
+        <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">config.js</code> could not be loaded.<br><br>
+        On Netlify go to:<br>
+        <b>Site settings → Environment variables</b><br>and add <b>SUPABASE_URL</b> and <b>SUPABASE_ANON_KEY</b>, then redeploy.
+      </p>
+      <div style="background:#fef2f2;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 14px;font-size:12px;color:#dc2626">
+        ❌ Supabase credentials not found
+      </div>
+    </div>`;
+    document.body.appendChild(box);
+  });
 }
 
 // 4052 streets
@@ -44,10 +63,15 @@ async function sha256(s){const b=await crypto.subtle.digest('SHA-256',new TextEn
 
 // ── Supabase ───────────────────────────────────────────
 function sbH(ex={}){return{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json',...ex};}
-async function sbGet(t,q=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{headers:sbH()});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbPost(t,body,pref=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:'POST',headers:sbH(pref?{'Prefer':pref}:{}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return pref.includes('representation')?r.json():null;}
-async function sbUpsert(body){const r=await fetch(`${SUPABASE_URL}/rest/v1/street_gps?on_conflict=street_id`,{method:'POST',headers:sbH({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());}
-async function sbDel(t,q){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:'DELETE',headers:sbH()});if(!r.ok)throw new Error(await r.text());}
+async function _sbErr(r){
+  const ct=r.headers.get('content-type')||'';
+  if(ct.includes('application/json')){try{const j=await r.json();return j.message||j.error||JSON.stringify(j);}catch{}}
+  return `HTTP ${r.status} ${r.statusText}`;
+}
+async function sbGet(t,q=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{headers:sbH()});if(!r.ok)throw new Error(await _sbErr(r));return r.json();}
+async function sbPost(t,body,pref=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:'POST',headers:sbH(pref?{'Prefer':pref}:{}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await _sbErr(r));return pref.includes('representation')?r.json():null;}
+async function sbUpsert(body){const r=await fetch(`${SUPABASE_URL}/rest/v1/street_gps?on_conflict=street_id`,{method:'POST',headers:sbH({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await _sbErr(r));}
+async function sbDel(t,q){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:'DELETE',headers:sbH()});if(!r.ok)throw new Error(await _sbErr(r));}
 
 // ── Auth ───────────────────────────────────────────────
 async function doLogin(){
@@ -65,7 +89,10 @@ async function doLogin(){
     session={user_id:usr.id,username:usr.username,full_name:usr.full_name||usr.username,group_id:usr.group_id,role:usr.role,allowed_wards:aw};
     localStorage.setItem(SESSION_KEY,JSON.stringify(session));
     startApp();
-  }catch(e){err.textContent='Error: '+e.message;}
+  }catch(e){
+    const msg=e.message||'';
+    err.textContent=msg.startsWith('HTTP')||msg.length<120?'Error: '+msg:'Connection failed — check your network or try again.';
+  }
   btn.disabled=false;btn.textContent='Sign In';
 }
 async function checkFirstRun(){try{const r=await sbGet('app_users','select=id&limit=1');if(!r.length)document.getElementById('setup-link').style.display='block';}catch{}}
