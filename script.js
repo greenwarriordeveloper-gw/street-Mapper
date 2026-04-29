@@ -6,26 +6,7 @@ const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
 const LS_KEY            = 'pondy_gps_v5';
 const SESSION_KEY       = 'pondy_session_v1';
 if(!SUPABASE_URL || !SUPABASE_ANON_KEY){
-  console.error('Missing config: copy config.example.js → config.js and fill in your keys.');
-  document.addEventListener('DOMContentLoaded',()=>{
-    const screen=document.getElementById('login-screen');
-    if(!screen)return;
-    const box=document.createElement('div');
-    box.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.92);display:flex;align-items:center;justify-content:center;';
-    box.innerHTML=`<div style="background:#fff;border-radius:16px;padding:32px 36px;max-width:420px;text-align:center;font-family:Inter,sans-serif">
-      <div style="font-size:32px;margin-bottom:12px">⚙️</div>
-      <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px">Configuration Missing</h2>
-      <p style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:20px">
-        <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">config.js</code> could not be loaded.<br><br>
-        On Netlify go to:<br>
-        <b>Site settings → Environment variables</b><br>and add <b>SUPABASE_URL</b> and <b>SUPABASE_ANON_KEY</b>, then redeploy.
-      </p>
-      <div style="background:#fef2f2;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 14px;font-size:12px;color:#dc2626">
-        ❌ Supabase credentials not found
-      </div>
-    </div>`;
-    document.body.appendChild(box);
-  });
+  console.error('Missing config: ensure config.js sets window.SUPABASE_URL and window.SUPABASE_ANON_KEY.');
 }
 
 // 4052 streets
