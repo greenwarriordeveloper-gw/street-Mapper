@@ -1,6 +1,11 @@
 # Secrets — never commit these
 .env
 
+# Dependencies & build output (not needed on Netlify — static HTML only)
+node_modules/
+dist/
+package-lock.json
+
 # OS / editor
 .DS_Store
 Thumbs.db

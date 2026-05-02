@@ -405,13 +405,33 @@ function bindTopBar(){
 }
 
 // ── Coord Search ───────────────────────────────────────
+function parseDMS(str){
+  // Matches ASCII and Unicode variants: °/space for degrees, '/′/'/space for minutes, "/″/"/space for seconds
+  const re=/(\d+)[°\s]+(\d+)['′’\s]+(\d+(?:\.\d+)?)["″”\s]*([NSns])\s+(\d+)[°\s]+(\d+)['′’\s]+(\d+(?:\.\d+)?)["″”\s]*([EWew])/;
+  const m=str.match(re);
+  if(!m)return null;
+  const toDD=(d,mn,s,dir)=>{
+    let dd=+d+(+mn)/60+(+s)/3600;
+    if(/[Ss]/.test(dir)||/[Ww]/.test(dir))dd=-dd;
+    return dd;
+  };
+  return{lat:toDD(m[1],m[2],m[3],m[4]),lon:toDD(m[5],m[6],m[7],m[8])};
+}
+
 function bindSearchBar(){
   const inp=document.getElementById('coord-input'),btn=document.getElementById('coord-go'),fb=document.getElementById('coord-fb');
   function go(){
-    const raw=inp.value.trim().replace(/[°′″'"]/g,'').replace(/[,;]+/g,' ').replace(/\s+/g,' ').trim();
-    const pts=raw.split(' ').map(Number).filter(n=>!isNaN(n));
-    if(pts.length<2){fb.textContent='✗ Invalid';fb.className='err';return;}
-    const[lat,lon]=pts;
+    const raw=inp.value.trim();
+    let lat,lon;
+    // Try DMS first
+    const dms=parseDMS(raw);
+    if(dms){lat=dms.lat;lon=dms.lon;}
+    else{
+      const cleaned=raw.replace(/[°′″'"]/g,'').replace(/[,;]+/g,' ').replace(/\s+/g,' ').trim();
+      const pts=cleaned.split(' ').map(Number).filter(n=>!isNaN(n));
+      if(pts.length<2){fb.textContent='✗ Invalid';fb.className='err';return;}
+      [lat,lon]=pts;
+    }
     if(lat<-90||lat>90||lon<-180||lon>180){fb.textContent='✗ Out of range';fb.className='err';return;}
     fb.textContent='✓ Flying…';fb.className='ok';
     if(searchPin)map.removeLayer(searchPin);
@@ -897,8 +917,8 @@ async function saveWardAssign(){
 // ── Polygon / Geofence Module ──────────────────────────
 function openPoly(){
   document.getElementById('poly-page').classList.add('show');
-  if(!polyMap)initPolyMap();
-  setTimeout(()=>polyMap.invalidateSize(),120);
+  if(!polyMap) initPolyMap();
+  setTimeout(()=>{ if(polyMap) polyMap.invalidateSize(); },80);
   renderGfList();
 }
 function closePoly(){document.getElementById('poly-page').classList.remove('show');}
